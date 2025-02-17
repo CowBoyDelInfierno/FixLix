@@ -74,6 +74,7 @@
       // Configura crossOrigin para evitar problemas al renderizar en canvas
       img.crossOrigin = "anonymous";
       // Asigna la fuente de la imagen desde el endpoint seguro
+      // Reemplaza 'https://tu-dominio.com' con el dominio correcto donde sirves las imágenes procesadas
       img.src = `https://tu-dominio.com/get_tip?tip_id=${tipId}`;
       img.onload = function() {
         const canvas = document.getElementById('tipCanvas');
@@ -83,11 +84,6 @@
         const ctx = canvas.getContext('2d');
         // Dibuja la imagen en el canvas
         ctx.drawImage(img, 0, 0);
-        // Si deseas superponer texto adicional, puedes hacerlo aquí:
-        // ctx.font = "bold 48px Arial";
-        // ctx.fillStyle = "rgba(255,255,255,0.7)";
-        // ctx.textAlign = "center";
-        // ctx.fillText("Tu Texto", canvas.width/2, canvas.height/2);
       }
       img.onerror = function() {
         document.getElementById('container').innerHTML = '<p style="color:white;text-align:center;">Error al cargar el tip</p>';
@@ -104,3 +100,4 @@
   </div>
 </body>
 </html>
+
