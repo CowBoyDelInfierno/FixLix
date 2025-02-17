@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini App - Tip Seguro</title>
+  <!-- Carga la librería de Telegram Web Apps -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    /* Reinicia márgenes y evita la selección de texto */
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    /* Contenedor a pantalla completa */
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    /* El canvas ocupará la mayor parte de la pantalla */
+    #tipCanvas {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+    }
+  </style>
+  <script>
+    // Deshabilitar el clic derecho
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+    });
+
+    // Deshabilitar atajos de teclado comunes para copiar, imprimir o capturar
+    document.addEventListener('keydown', function(e) {
+      // Deshabilita Print Screen y atajos con Ctrl+...
+      if (e.key === 'PrintScreen' || 
+          (e.ctrlKey && (e.key.toLowerCase() === 's' || e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'x'))) {
+        e.preventDefault();
+      }
+    });
+
+    // Inicializa la Web App de Telegram
+    Telegram.WebApp.ready();
+
+    // Función para obtener parámetros de la URL
+    function getParameterByName(name) {
+      name = name.replace(/[\[\]]/g, '\\$&');
+      const url = window.location.href;
+      const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+      const results = regex.exec(url);
+      if (!results) return null;
+      if (!results[2]) return '';
+      return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+
+    // Función para cargar la imagen del tip y dibujarla en el canvas
+    function loadTip() {
+      const tipId = getParameterByName('tip_id');
+      if (!tipId) {
+        document.getElementById('container').innerHTML = '<p style="color:white;text-align:center;">Tip no encontrado</p>';
+        return;
+      }
+      // Crea un objeto imagen
+      const img = new Image();
+      // Deshabilita arrastrar la imagen
+      img.draggable = false;
+      // Configura crossOrigin para evitar problemas al renderizar en canvas
+      img.crossOrigin = "anonymous";
+      // Asigna la fuente de la imagen desde el endpoint seguro
+      img.src = `https://tu-dominio.com/get_tip?tip_id=${tipId}`;
+      img.onload = function() {
+        const canvas = document.getElementById('tipCanvas');
+        // Ajusta el canvas al tamaño de la imagen
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        // Dibuja la imagen en el canvas
+        ctx.drawImage(img, 0, 0);
+        // Si deseas superponer texto adicional, puedes hacerlo aquí:
+        // ctx.font = "bold 48px Arial";
+        // ctx.fillStyle = "rgba(255,255,255,0.7)";
+        // ctx.textAlign = "center";
+        // ctx.fillText("Tu Texto", canvas.width/2, canvas.height/2);
+      }
+      img.onerror = function() {
+        document.getElementById('container').innerHTML = '<p style="color:white;text-align:center;">Error al cargar el tip</p>';
+      }
+    }
+
+    // Cargar el tip al terminar de cargar el documento
+    document.addEventListener("DOMContentLoaded", loadTip);
+  </script>
+</head>
+<body>
+  <div id="container">
+    <canvas id="tipCanvas"></canvas>
+  </div>
+</body>
+</html>
