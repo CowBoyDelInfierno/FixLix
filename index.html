@@ -6,7 +6,6 @@
   <!-- Carga la librería de Telegram Web Apps -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    /* Reinicia márgenes y evita la selección de texto */
     html, body {
       margin: 0;
       padding: 0;
@@ -14,7 +13,6 @@
       user-select: none;
       -webkit-user-select: none;
     }
-    /* Contenedor a pantalla completa */
     #container {
       position: relative;
       width: 100vw;
@@ -24,7 +22,6 @@
       justify-content: center;
       align-items: center;
     }
-    /* El canvas ocupará la mayor parte de la pantalla */
     #tipCanvas {
       max-width: 100%;
       max-height: 100%;
@@ -32,16 +29,10 @@
     }
   </style>
   <script>
-    // Deshabilitar el clic derecho
-    document.addEventListener('contextmenu', function(e) {
-      e.preventDefault();
-    });
-
-    // Deshabilitar atajos de teclado comunes para copiar, imprimir o capturar
+    // Deshabilitar clic derecho y atajos para copiar o imprimir
+    document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
     document.addEventListener('keydown', function(e) {
-      // Deshabilita Print Screen y atajos con Ctrl+...
-      if (e.key === 'PrintScreen' || 
-          (e.ctrlKey && (e.key.toLowerCase() === 's' || e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'x'))) {
+      if (e.key === 'PrintScreen' || (e.ctrlKey && ['s','c','x'].includes(e.key.toLowerCase()))) {
         e.preventDefault();
       }
     });
@@ -60,37 +51,46 @@
       return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
 
-    // Función para cargar la imagen del tip y dibujarla en el canvas
-    function loadTip() {
+    // Función para cargar la imagen del tip usando fetch y dibujarla en un canvas
+    async function loadTip() {
       const tipId = getParameterByName('tip_id');
       if (!tipId) {
         document.getElementById('container').innerHTML = '<p style="color:white;text-align:center;">Tip no encontrado</p>';
         return;
       }
-      // Crea un objeto imagen
-      const img = new Image();
-      // Deshabilita arrastrar la imagen
-      img.draggable = false;
-      // Configura crossOrigin para evitar problemas al renderizar en canvas
-      img.crossOrigin = "anonymous";
-      // Asigna la fuente de la imagen desde el endpoint seguro
-      // Reemplaza 'https://tu-dominio.com' con el dominio correcto donde sirves las imágenes procesadas
-      img.src = `https://tu-dominio.com/get_tip?tip_id=${tipId}`;
-      img.onload = function() {
-        const canvas = document.getElementById('tipCanvas');
-        // Ajusta el canvas al tamaño de la imagen
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        // Dibuja la imagen en el canvas
-        ctx.drawImage(img, 0, 0);
+      
+      // Primero, obtenemos el token desde el endpoint del servidor
+      let token;
+      try {
+        const tokenResponse = await fetch(`/get_token?tip_id=${tipId}`);
+        if (!tokenResponse.ok) throw new Error("Error al obtener el token");
+        const tokenData = await tokenResponse.json();
+        token = tokenData.token;
+      } catch (err) {
+        document.getElementById('container').innerHTML = '<p style="color:white;text-align:center;">Error al obtener el token</p>';
+        return;
       }
-      img.onerror = function() {
+
+      // Ahora, solicitamos la imagen usando el token
+      try {
+        const response = await fetch(`/get_tip?tip_id=${tipId}&token=${token}`);
+        if (!response.ok) throw new Error('Error al cargar el tip');
+        const blob = await response.blob();
+        const canvas = document.getElementById('tipCanvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = function() {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+        }
+        // Creamos un objeto URL a partir del blob para asignarlo al objeto imagen
+        img.src = URL.createObjectURL(blob);
+      } catch (error) {
         document.getElementById('container').innerHTML = '<p style="color:white;text-align:center;">Error al cargar el tip</p>';
       }
     }
 
-    // Cargar el tip al terminar de cargar el documento
     document.addEventListener("DOMContentLoaded", loadTip);
   </script>
 </head>
@@ -100,4 +100,3 @@
   </div>
 </body>
 </html>
-
